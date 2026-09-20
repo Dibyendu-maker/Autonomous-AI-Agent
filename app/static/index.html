@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autonomous AI Research Agent | LangGraph</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    .node-pulse {
+      animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+          🤖
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight tracking-tight">Autonomous Agent Studio</h1>
+          <p class="text-xs text-slate-400">Plan • Execute • Observe • Evaluate • Re-plan</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2 text-xs">
+        <span id="llmBadge" class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 font-mono text-indigo-400">
+          LLM: ...
+        </span>
+        <span id="searchBadge" class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 font-mono text-emerald-400">
+          Search: ...
+        </span>
+        <span id="statusIndicator" class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 font-mono text-slate-400">
+          ● Idle
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+    <!-- Goal Input Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <label class="block text-sm font-medium text-slate-300 mb-2">Research Goal & Mission</label>
+      <div class="flex flex-col md:flex-row gap-3">
+        <input
+          id="goalInput"
+          type="text"
+          placeholder="e.g. Research the latest AI hiring trends in 2026 and prepare a report."
+          value="Research the latest AI hiring trends and enterprise adoption patterns in 2026."
+          class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition"
+        />
+        <button
+          id="runBtn"
+          onclick="startExecution()"
+          class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-medium px-6 py-3 rounded-xl transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30"
+        >
+          <span>Run Agent Loop</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </div>
+
+      <!-- Quick prompts -->
+      <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-400">
+        <span class="py-1">Try:</span>
+        <button onclick="setGoal(this.innerText)" class="hover:text-indigo-400 bg-slate-800/60 px-2.5 py-1 rounded-lg transition">Research current enterprise multi-agent deployment patterns in 2026.</button>
+        <button onclick="setGoal(this.innerText)" class="hover:text-indigo-400 bg-slate-800/60 px-2.5 py-1 rounded-lg transition">Analyze key benchmarks between local Small Language Models and Cloud APIs.</button>
+      </div>
+    </div>
+
+    <!-- Agent Pipeline Visualizer -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <h2 class="text-xs uppercase font-bold tracking-wider text-slate-400 mb-4">StateGraph Lifecycle</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div id="node-planner" class="p-4 rounded-xl border border-slate-800 bg-slate-950/60 transition-all flex flex-col items-center text-center">
+          <div class="text-2xl mb-1">🧠</div>
+          <div class="font-semibold text-sm">1. Planner</div>
+          <div class="text-xs text-slate-400">Decompose Goal</div>
+        </div>
+
+        <div id="node-researcher" class="p-4 rounded-xl border border-slate-800 bg-slate-950/60 transition-all flex flex-col items-center text-center">
+          <div class="text-2xl mb-1">🔎</div>
+          <div class="font-semibold text-sm">2. Researcher</div>
+          <div class="text-xs text-slate-400">Search & Extract</div>
+        </div>
+
+        <div id="node-evaluator" class="p-4 rounded-xl border border-slate-800 bg-slate-950/60 transition-all flex flex-col items-center text-center">
+          <div class="text-2xl mb-1">⚖️</div>
+          <div class="font-semibold text-sm">3. Evaluator</div>
+          <div class="text-xs text-slate-400">Critic & Quality Gate</div>
+        </div>
+
+        <div id="node-replan" class="p-4 rounded-xl border border-slate-800 bg-slate-950/60 transition-all flex flex-col items-center text-center">
+          <div class="text-2xl mb-1">🔄</div>
+          <div class="font-semibold text-sm">4. Re-Plan</div>
+          <div class="text-xs text-slate-400">Corrective Loop</div>
+        </div>
+
+        <div id="node-synthesizer" class="p-4 rounded-xl border border-slate-800 bg-slate-950/60 transition-all flex flex-col items-center text-center col-span-2 sm:col-span-1">
+          <div class="text-2xl mb-1">📝</div>
+          <div class="font-semibold text-sm">5. Synthesizer</div>
+          <div class="text-xs text-slate-400">Final Report</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dual Panel: Execution Telemetry & Final Report -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Activity Feed -->
+      <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col h-[520px]">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+          <h2 class="text-xs uppercase font-bold tracking-wider text-slate-400">Live Agent Stream</h2>
+          <span id="logCount" class="text-xs font-mono text-slate-500">0 events</span>
+        </div>
+        <div id="activityFeed" class="flex-1 overflow-y-auto space-y-3 font-mono text-xs pr-2">
+          <div class="text-slate-500 italic p-3 text-center">Ready to launch agent. Enter a goal above.</div>
+        </div>
+      </div>
+
+      <!-- Report & Findings -->
+      <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col h-[520px]">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+          <h2 class="text-xs uppercase font-bold tracking-wider text-slate-400">Synthesis & Findings</h2>
+          <span id="reportStatus" class="text-xs text-slate-500 font-mono">Awaiting run</span>
+        </div>
+        <div id="reportContainer" class="flex-1 overflow-y-auto prose prose-invert max-w-none text-sm p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+          <p class="text-slate-500 italic">Final report and citations will render here automatically upon completion.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-800 py-3 text-center text-xs text-slate-500 font-mono">
+    LangGraph • Google Gemini • Tavily • FastAPI
+  </footer>
+
+  <script>
+    let ws = null;
+    const nodes = ["planner", "researcher", "evaluator", "replan", "synthesizer"];
+
+    function setGoal(text) {
+      document.getElementById("goalInput").value = text;
+    }
+
+    async function loadHealth() {
+      try {
+        const res = await fetch("/api/health");
+        const data = await res.json();
+        document.getElementById("llmBadge").innerText = `LLM: ${data.llm_provider} (${data.llm_model})`;
+        document.getElementById("searchBadge").innerText = `Search: ${data.search_provider}`;
+      } catch (e) {
+        console.error("Health check failed:", e);
+      }
+    }
+    loadHealth();
+
+    function highlightNode(activeNode) {
+      nodes.forEach(n => {
+        const el = document.getElementById(`node-${n}`);
+        if (el) {
+          if (n === activeNode) {
+            el.className = "p-4 rounded-xl border border-indigo-500 bg-indigo-950/40 node-pulse flex flex-col items-center text-center shadow-lg shadow-indigo-500/20";
+          } else {
+            el.className = "p-4 rounded-xl border border-slate-800 bg-slate-950/60 transition-all flex flex-col items-center text-center";
+          }
+        }
+      });
+    }
+
+    function addLog(node, message, time = "") {
+      const feed = document.getElementById("activityFeed");
+      const emptyMsg = feed.querySelector(".italic");
+      if (emptyMsg) emptyMsg.remove();
+
+      const item = document.createElement("div");
+      item.className = "p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/80 text-xs";
+      item.innerHTML = `
+        <div class="flex items-center justify-between text-slate-500 mb-1">
+          <span class="text-indigo-400 font-semibold uppercase text-[10px] tracking-wider">[${node}]</span>
+          <span>${time ? new Date(time).toLocaleTimeString() : new Date().toLocaleTimeString()}</span>
+        </div>
+        <div class="text-slate-200 leading-relaxed">${message}</div>
+      `;
+      feed.appendChild(item);
+      feed.scrollTop = feed.scrollHeight;
+
+      const count = feed.children.length;
+      document.getElementById("logCount").innerText = `${count} events`;
+    }
+
+    function startExecution() {
+      const goal = document.getElementById("goalInput").value.trim();
+      if (!goal) return;
+
+      const runBtn = document.getElementById("runBtn");
+      runBtn.disabled = true;
+      runBtn.classList.add("opacity-50", "cursor-not-allowed");
+
+      document.getElementById("statusIndicator").innerHTML = '<span class="text-amber-400">● Running</span>';
+      document.getElementById("activityFeed").innerHTML = "";
+      document.getElementById("reportStatus").innerText = "Executing workflow...";
+      document.getElementById("reportContainer").innerHTML = '<p class="text-slate-400 animate-pulse">Running autonomous loop... Gathering intelligence.</p>';
+
+      const loc = window.location;
+      const wsProtocol = loc.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${wsProtocol}//${loc.host}/ws/agent`;
+
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        addLog("system", `Connected to agent engine. Goal submitted: "${goal}"`);
+        ws.send(JSON.stringify({ goal: goal, max_retries: 2 }));
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+
+        if (msg.event === "node_update") {
+          highlightNode(msg.node);
+          const data = msg.data;
+          
+          if (data.logs && Array.isArray(data.logs)) {
+            data.logs.forEach(l => addLog(l.node, l.message, l.timestamp));
+          } else {
+            addLog(msg.node, `State updated in ${msg.node}`);
+          }
+
+          if (msg.node === "synthesizer" && data.final_report) {
+            document.getElementById("reportContainer").innerHTML = marked.parse(data.final_report);
+            document.getElementById("reportStatus").innerText = "Completed";
+          }
+        } else if (msg.event === "finished") {
+          highlightNode(null);
+          document.getElementById("statusIndicator").innerHTML = '<span class="text-emerald-400">● Completed</span>';
+          addLog("system", "Workflow execution completed successfully.");
+          runBtn.disabled = false;
+          runBtn.classList.remove("opacity-50", "cursor-not-allowed");
+          ws.close();
+        } else if (msg.event === "error") {
+          highlightNode(null);
+          document.getElementById("statusIndicator").innerHTML = '<span class="text-rose-400">● Error</span>';
+          addLog("error", msg.message);
+          document.getElementById("reportContainer").innerHTML = `<div class="p-4 bg-rose-950/30 border border-rose-800 rounded-lg text-rose-300">${msg.message}</div>`;
+          runBtn.disabled = false;
+          runBtn.classList.remove("opacity-50", "cursor-not-allowed");
+          ws.close();
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error("WS error:", err);
+        addLog("error", "WebSocket connection failure.");
+        runBtn.disabled = false;
+        runBtn.classList.remove("opacity-50", "cursor-not-allowed");
+      };
+    }
+  </script>
+</body>
+</html>
